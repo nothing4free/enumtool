@@ -15,7 +15,8 @@ class color:
 
 def parse_args():
     parser = ArgumentParser(description="Automatic asset enumeration script")
-    parser.add_argument('-a', '--as', type=str, dest="autonomous_system", help="Company name")
+    parser.add_argument('-a', '--as', type=str, dest="autonomous_system", help="Company name", required=True)
+    parser.add_argument('-f', '--file', type=str, dest="file", help="The file to dump the domains to.", required=True)
     args = parser.parse_args()
     return args
 
@@ -62,7 +63,6 @@ def get_cidr_domains(cidr_prefixes):
             if len(element) >= 2:
                 cidr_domains.append(element)
 
-    print(" [i] Found a total of " + str(len(cidr_domains)) + " domains.")
     return cidr_domains
 
 
@@ -91,29 +91,53 @@ def get_domains_by_tld(tlds):
     return tld_domains
 
 
-def get_subdomains(domains):
-    subdomains_list = []
-    subdomains = []
-    for domain in domains:
-        url = "https://sonar.omnisint.io/all/" + domain
-        resp = requests.get(url=url)
-        subdomains_list.append(resp.json())
+def write_on_file(cidr_prefixes, domains, file):
+    f = open(file, "w")
+    f.write(" > CIDR prefixes found: " + str(len(cidr_prefixes)) + "\n")
+    for prefix in cidr_prefixes:
+        f.write(prefix + "\n")
+    f.write("\n > Total domains found: " + str(len(domains)) + "\n")
+    for domain in sorted(domains):
+        f.write(domain + "\n")
+    f.close()
 
+
+# def get_subdomains(domains):
+#     subdomains_list = []
+#     subdomains = []
+#     for domain in domains:
+#         url = "https://sonar.omnisint.io/all/" + domain
+#         resp = requests.get(url=url)
+#         subdomains_list.append(resp.json())
+#
+#     for item in subdomains_list:
+#         for subdomain in item:
+#             subdomains.append(subdomain)
+#
+#     print(subdomains[0])
+#     print(subdomains[100])
+#     print(" amt: " + str(len(subdomains)))
 
 
 def main():
     args = parse_args()
     print_intro()
+
     print(" [i] Now scanning for assets belonging to autonomous system " + args.autonomous_system)
+
+    file = args.file
     cidr_prefixes = get_prefixes(args.autonomous_system)
     cidr_domains = get_cidr_domains(cidr_prefixes)
     tlds = get_tlds(cidr_domains)
     domains = get_domains_by_tld(tlds)
     for domain in cidr_domains:
         domains.append(domain)
-
     domains = list(set(domains))
-    print(" [i] The final amount of domains is: " + str(len(domains)))
+    print(" [i] Found a total of " + str(len(domains)) + " domains.")
+    write_on_file(cidr_prefixes, domains, file)
+    print(" [i] Results successfully written to: " + file)
+    print("     You can now use (the other tool) to individually search for subdomains.")
+    print(" ───────────────────────────────────────────────────────────────────────────────────────────")
 
 
 main()
