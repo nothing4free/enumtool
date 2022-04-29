@@ -1,5 +1,5 @@
-# enumtool
-enumtool is an automatic asset enumeration script. It can detect a wide range of domains given an ASN or obtain a wide list of subdomains given a domain name. I plan on extending its functionality even further, but for now this is a tool I made that suits my needs for the Ethical Hacking subject in my Software Engineering studies.
+# enumtool: an automatic asse enumeration script.
+enumtool is an asset enumeration script that can detect a wide range of domains given an ASN or obtain a wide list of subdomains given a domain name. I plan on extending its functionality even further, but for now this is a tool I made that suits my needs for the Ethical Hacking subject in my Software Engineering studies.
 
 ## Use
 
