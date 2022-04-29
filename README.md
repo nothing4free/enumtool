@@ -3,6 +3,9 @@ enumtool is an automatic asset enumeration script. It can detect a wide range of
 
 ## Use
 
+First, install the required packages using ```pip install -r requirements.txt```.<br>
+Once that's done, you can invoke the script using:
+
 ```python3 enumtool.py [-h] [-a AUTONOMOUS_SYSTEM] [-d DOMAIN] [-f FILE] -m MODE```
 
 The available modes (as of now) are the following:
