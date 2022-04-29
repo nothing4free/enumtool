@@ -2,9 +2,10 @@ import requests
 from argparse import ArgumentParser
 import tldextract
 
-# defines the colors on the console, taken from blender:
-# https://svn.blender.org/svnroot/bf-blender/trunk/blender/build_files/scons/tools/bcolors.py
+
 class color:
+    # defines the colors on the console, taken from blender:
+    # https://svn.blender.org/svnroot/bf-blender/trunk/blender/build_files/scons/tools/bcolors.py
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -15,8 +16,10 @@ class color:
 
 def parse_args():
     parser = ArgumentParser(description="Automatic asset enumeration script")
-    parser.add_argument('-a', '--as', type=str, dest="autonomous_system", help="Company name", required=True)
-    parser.add_argument('-f', '--file', type=str, dest="file", help="The file to dump the domains to.", required=True)
+    parser.add_argument('-a', '--as', type=str, dest="autonomous_system", help="Company name")
+    parser.add_argument('-d', '--domain', type=str, dest="domain", help="Domain")
+    parser.add_argument('-f', '--file', type=str, dest="file", help="The file to dump the domains to.")
+    parser.add_argument('-m', '--mode', type=str, dest="mode", help="The mode that enumtool works on.", required=True)
     args = parser.parse_args()
     return args
 
@@ -29,7 +32,8 @@ def print_intro():
     print("  ██╔╝    ██╔══╝  ██║╚██╗██║██║   ██║██║╚██╔╝██║   ██║   ██║   ██║██║   ██║██║         ╚██╗ ")
     print(" ██╔╝     ███████╗██║ ╚████║╚██████╔╝██║ ╚═╝ ██║   ██║   ╚██████╔╝╚██████╔╝███████╗     ╚██╗")
     print(" ╚═╝      ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝      ╚═╝")
-    print(" Automatic asset enumeration script, made with <3 by nothing4free                      v.0.1")
+    print(" Automatic asset enumeration script, made with " + color.FAIL + "<3" + color.ENDC +
+          " by nothing4free                      " + color.OKGREEN + "v.0.1" + color.ENDC)
     print(" ───────────────────────────────────────────────────────────────────────────────────────────")
 
 
@@ -41,7 +45,7 @@ def get_prefixes(search_query):
     for ipv4_prefix in data["data"]["ipv4_prefixes"]:
         cidr_prefixes.append(ipv4_prefix["prefix"])
     # print(cidr_prefixes)
-    print(" [i] Found a total of " + str(len(cidr_prefixes)) + " CIDR prefixes.")
+    print(" [" + color.OKBLUE + "i" + color.ENDC + "] Found a total of " + str(len(cidr_prefixes)) + " CIDR prefixes.")
     return cidr_prefixes
 
 
@@ -70,7 +74,7 @@ def get_tlds(domains):
     tlds = []
     for domain in domains:
         tlds.append(tldextract.extract(domain).domain)
-    tlds = list(set(tlds)) # deletes the duplicate domains from the list
+    tlds = list(set(tlds))  # deletes the duplicate domains from the list
 
     return tlds
 
@@ -87,56 +91,76 @@ def get_domains_by_tld(tlds):
         for domain in item:
             tld_domains.append(domain)
 
-    tld_domains = list(set(tld_domains)) # deletes the duplicates
+    tld_domains = list(set(tld_domains))  # deletes the duplicates
     return tld_domains
 
 
 def write_on_file(cidr_prefixes, domains, file):
-    f = open(file, "w")
-    f.write(" > CIDR prefixes found: " + str(len(cidr_prefixes)) + "\n")
-    for prefix in cidr_prefixes:
-        f.write(prefix + "\n")
-    f.write("\n > Total domains found: " + str(len(domains)) + "\n")
-    for domain in sorted(domains):
-        f.write(domain + "\n")
-    f.close()
+    if file is not None:
+        f = open(file, "w")
+        f.write(" > CIDR prefixes found: " + str(len(cidr_prefixes)) + "\n")
+        for prefix in cidr_prefixes:
+            f.write(prefix + "\n")
+        f.write("\n > Total domains found: " + str(len(domains)) + "\n")
+        for domain in sorted(domains):
+            f.write(domain + "\n")
+        f.close()
+    else:
+        print(" [" + color.FAIL + "!" + color.ENDC + " ] Please use -f, --file to specify a file to dump the "
+                                                     "output to.")
 
 
-# def get_subdomains(domains):
-#     subdomains_list = []
-#     subdomains = []
-#     for domain in domains:
-#         url = "https://sonar.omnisint.io/all/" + domain
-#         resp = requests.get(url=url)
-#         subdomains_list.append(resp.json())
-#
-#     for item in subdomains_list:
-#         for subdomain in item:
-#             subdomains.append(subdomain)
-#
-#     print(subdomains[0])
-#     print(subdomains[100])
-#     print(" amt: " + str(len(subdomains)))
+def get_subdomains(domain, file):
+    subdomain_list = []
+    subdomains = []
+    url = "https://sonar.omnisint.io/all/" + domain
+    resp = requests.get(url=url)
+    subdomain_list.append(resp.json())
+
+    for item in subdomain_list:
+        for subdomain in item:
+            subdomains.append(subdomain)
+
+    print(" > Subdomains found for " + domain + ":")
+    for subdomain in subdomains:
+        print(subdomain)
+
+    if file is not None:
+        f = open(file, "w")
+        f.write(" > Subdomains found: " + str(len(subdomains)) + "\n")
+        for subdomain in subdomains:
+            f.write(subdomain + "\n")
+        f.close()
+        print(" [" + color.OKGREEN + "i" + color.ENDC + "] Results successfully written to: " + file)
 
 
 def main():
     args = parse_args()
     print_intro()
-
-    print(" [i] Now scanning for assets belonging to autonomous system " + args.autonomous_system)
-
     file = args.file
-    cidr_prefixes = get_prefixes(args.autonomous_system)
-    cidr_domains = get_cidr_domains(cidr_prefixes)
-    tlds = get_tlds(cidr_domains)
-    domains = get_domains_by_tld(tlds)
-    for domain in cidr_domains:
-        domains.append(domain)
-    domains = list(set(domains))
-    print(" [i] Found a total of " + str(len(domains)) + " domains.")
-    write_on_file(cidr_prefixes, domains, file)
-    print(" [i] Results successfully written to: " + file)
-    print("     You can now use (the other tool) to individually search for subdomains.")
+    if args.mode == "get_subdomains":
+        if args.domain is not None:
+            print(" [" + color.OKBLUE + "i" + color.ENDC + "] Now scanning for subdomains based on " + args.domain)
+            get_subdomains(args.domain, args.file)
+        else:
+            print(" [" + color.FAIL + "!" + color.ENDC + "] Please enter a domain with the -d or --domain flag.")
+            exit()
+    elif args.mode == "get_domains":
+        print(" [" + color.OKBLUE + "i" + color.ENDC + "] Now scanning for assets belonging to autonomous system "
+              + args.autonomous_system)
+        cidr_prefixes = get_prefixes(args.autonomous_system)
+        cidr_domains = get_cidr_domains(cidr_prefixes)
+        tlds = get_tlds(cidr_domains)
+        domains = get_domains_by_tld(tlds)
+        for domain in cidr_domains:
+            domains.append(domain)
+        domains = list(set(domains))
+        print(" [" + color.OKBLUE + "i" + color.ENDC + "] Found a total of " + str(len(domains)) + " domains.")
+        write_on_file(cidr_prefixes, domains, file)
+        print(" [i] Results successfully written to: " + file)
+    else:
+        print(" [" + color.FAIL + "!" + color.ENDC + "] Invalid option. Use enumtool -h or --help to display the help "
+                                                     "menu.")
     print(" ───────────────────────────────────────────────────────────────────────────────────────────")
 
 
