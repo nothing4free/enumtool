@@ -4,7 +4,7 @@ enumtool is an asset enumeration script that can detect a wide range of domains 
 ## Use
 
 First, install the required packages using: <br>
-```pip install -r requirements.txt```.<br>
+```pip install -r requirements.txt```<br><br>
 Once that's done, you can invoke the script using:
 
 ```python3 enumtool.py [-h] [-a AUTONOMOUS_SYSTEM] [-d DOMAIN] [-f FILE] -m MODE```
